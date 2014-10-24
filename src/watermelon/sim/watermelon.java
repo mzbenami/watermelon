@@ -45,7 +45,7 @@ public class watermelon {
 	static double dimension = 100.0;
 	static double distoseed = 2.00;
 	static double distowall = 1.00;
-	static double distotree = 1.00;
+	static double distotree = 2.00;
 	static double s = 0.00;
 	static double total = 0.00;
 
@@ -164,7 +164,7 @@ public class watermelon {
 
 	class OutpostUI extends JPanel implements ActionListener {
 		int FRAME_SIZE = 800;
-		int FIELD_SIZE = 600;
+		int FIELD_SIZE = 1000;
 		JFrame f;
 		FieldPanel field;
 		JButton next;
@@ -240,8 +240,8 @@ public class watermelon {
 		double PSIZE = 10;
 		double s;
 		BasicStroke stroke = new BasicStroke(2.0f);
-		double ox = 10.0;
-		double oy = 10.0;
+		double ox = 0;
+		double oy = 0;
 
 		public FieldPanel(double scale) {
 			setOpaque(false);
@@ -256,8 +256,8 @@ public class watermelon {
 			g2.setStroke(stroke);
 			double size = Math.max(W, L);
 			// draw 2D rectangle
-			g2.draw(new Rectangle2D.Double(ox, oy, dimension * s / size * W,
-					dimension * s / size * L));
+			g2.draw(new Rectangle2D.Double(ox, oy, dimension * s / size * W / 2,
+					dimension * s / size * L / 2));
 			double x_in = (dimension * s) / size;
 			double y_in = (dimension * s) / size;
 			for (int i=0; i<treelist.size(); i++) {
@@ -278,7 +278,7 @@ public class watermelon {
 			double size = Math.max(W, L);
 			double x_in = (dimension * s) / size;
 			double y_in = (dimension * s) / size;
-			Ellipse2D e = new Ellipse2D.Double(pr.x * x_in-x_in/2, pr.y * y_in-y_in/2, x_in , y_in );
+			Ellipse2D e = new Ellipse2D.Double((pr.x - 1) * x_in/2, (pr.y -1) * y_in/2, x_in , y_in );
 			g2.setStroke(stroke);
 			g2.draw(e);
 			g2.fill(e);
@@ -293,7 +293,7 @@ public class watermelon {
 			double size = Math.max(W, L);
 			double x_in = (dimension * s) / size;
 			double y_in = (dimension * s) / size;
-			Ellipse2D e = new Ellipse2D.Double(sd.x * x_in-x_in /2, sd.y * y_in-y_in / 2
+			Ellipse2D e = new Ellipse2D.Double((sd.x - 1) * x_in/2, ( sd.y - 1) * y_in/2
 					, x_in, y_in);
 			g2.setStroke(stroke);
 			g2.draw(e);
@@ -389,8 +389,7 @@ public class watermelon {
 		for (int i = 0; i < treelist.size(); i++) {
 			for (int j = 0; j < nseeds; j++) {
 				if (distance(seedlistin.get(j), treelist.get(i)) < distotree) {
-					System.out
-							.printf("The %d seed (%f, %f) is too close to the tree (%d, %d), %f\n",
+					System.out.printf("The %d seed (%f, %f) is too close to the tree (%f, %f), %f\n",
 									j,
 									seedlistin.get(j).x,
 									seedlistin.get(j).y,
