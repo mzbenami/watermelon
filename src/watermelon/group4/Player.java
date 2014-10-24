@@ -7,9 +7,9 @@ import watermelon.sim.Point;
 import watermelon.sim.seed;
 
 public class Player extends watermelon.sim.Player {
-	static double distowall = 1.01;
-	static double distotree = 1.01;
-	static double distoseed = 2.01;
+	static double distowall = 1.00;
+	static double distotree = 1.00;
+	static double distoseed = 2.00;
 
 	public void init() {
 
@@ -33,6 +33,7 @@ public class Player extends watermelon.sim.Player {
 
 		ArrayList<seed> seedlist = new ArrayList<seed>();
 		for (double i = distowall; i < width - distowall; i = i + distoseed) {
+			int rowCounter = 0;
 			for (double j = distowall; j < length - distowall; j = j + distoseed) {
 				seed tmp;
 				tmp = new seed(i, j, lastime);
@@ -46,8 +47,14 @@ public class Player extends watermelon.sim.Player {
 				if (add) {
 					seedlist.add(tmp);
 				}
+				
+				lastime = !lastime;
+				rowCounter++;
+			}
+			if (rowCounter % 2 == 0) {
 				lastime = !lastime;
 			}
+
 		}
 		System.out.printf("seedlist size is %d", seedlist.size());
 		return seedlist;
