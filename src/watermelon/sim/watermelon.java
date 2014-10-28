@@ -28,15 +28,17 @@ public class watermelon {
 	// print more details?
 	static boolean verbose = true;
 
+	// Vary saturation of seeds by their score?
+	static boolean enhancedColors = true;
+	
 	// Step by step trace
 	static boolean trace = true;
 
 	// enable gui
 	static boolean gui = true;
 
-	static double L; // land cells number to afford outpost
+	static double L;
 	static double W;
-	static private Point[] grid;
 	static ArrayList<Pair> treelist = new ArrayList<Pair>();
 	static ArrayList<seed> seedlist = new ArrayList<seed>();
 
@@ -164,7 +166,7 @@ public class watermelon {
 
 	class OutpostUI extends JPanel implements ActionListener {
 		int FRAME_SIZE = 800;
-		int FIELD_SIZE = 1000;
+		int FIELD_SIZE = 600;
 		JFrame f;
 		FieldPanel field;
 		JButton next;
@@ -240,8 +242,8 @@ public class watermelon {
 		double PSIZE = 10;
 		double s;
 		BasicStroke stroke = new BasicStroke(2.0f);
-		double ox = 0;
-		double oy = 0;
+		double ox = 10.0;
+		double oy = 10.0;
 
 		public FieldPanel(double scale) {
 			setOpaque(false);
@@ -256,16 +258,19 @@ public class watermelon {
 			g2.setStroke(stroke);
 			double size = Math.max(W, L);
 			// draw 2D rectangle
-			g2.draw(new Rectangle2D.Double(ox, oy, dimension * s / size * W / 2,
-					dimension * s / size * L / 2));
+			g2.draw(new Rectangle2D.Double(ox, oy, dimension * s / size * W,
+					dimension * s / size * L));
+			
 			double x_in = (dimension * s) / size;
 			double y_in = (dimension * s) / size;
+			
 			for (int i=0; i<treelist.size(); i++) {
 				g2.setPaint(Color.green);
 				//g2.fill(new Rectangle2D.Double(ox+treelist.get(i).x,
 					//	oy+treelist.get(i).y, x_in, y_in));
 				drawTree(g2, treelist.get(i));
 			}
+			
 			for (int i = 0; i < seedlist.size(); i++) {
 				// drawPoint(g2, pointers[i]);
 				drawPoint(g2, seedlist.get(i));
@@ -278,7 +283,7 @@ public class watermelon {
 			double size = Math.max(W, L);
 			double x_in = (dimension * s) / size;
 			double y_in = (dimension * s) / size;
-			Ellipse2D e = new Ellipse2D.Double((pr.x - 1) * x_in/2, (pr.y -1) * y_in/2, x_in , y_in );
+			Ellipse2D e = new Ellipse2D.Double(ox + pr.x*x_in - x_in, oy + pr.y*y_in - y_in, 2*x_in , 2*y_in);
 			g2.setStroke(stroke);
 			g2.draw(e);
 			g2.fill(e);
@@ -286,15 +291,25 @@ public class watermelon {
 		}
 
 		public void drawPoint(Graphics2D g2, seed sd) {
-			if (sd.tetraploid == true)
-				g2.setPaint(Color.BLACK);
-			else
-				g2.setPaint(Color.MAGENTA);
+	        double saturation = sd.score*sd.score * 0.75 + 0.25;
+	        
+			if (sd.tetraploid == true) {
+				if (enhancedColors)
+					g2.setPaint(new Color(Color.HSBtoRGB((float) 0.6, (float) saturation, (float) 1.0)));
+				else
+					g2.setPaint(Color.BLACK);
+			} else {
+				if (enhancedColors)
+					g2.setPaint(new Color(Color.HSBtoRGB((float) 0.0, (float) saturation, (float) 1.0)));
+				else
+					g2.setPaint(Color.MAGENTA);
+			}
+			
 			double size = Math.max(W, L);
 			double x_in = (dimension * s) / size;
 			double y_in = (dimension * s) / size;
-			Ellipse2D e = new Ellipse2D.Double((sd.x - 1) * x_in/2, ( sd.y - 1) * y_in/2
-					, x_in, y_in);
+			
+			Ellipse2D e = new Ellipse2D.Double(ox + sd.x*x_in - x_in, oy + sd.y*y_in - y_in, 2*x_in, 2*y_in);
 			g2.setStroke(stroke);
 			g2.draw(e);
 			g2.fill(e);
@@ -322,6 +337,8 @@ public class watermelon {
 	}
 
 	double calculatescore() {
+		total = 0;
+		
 		for (int i = 0; i < seedlist.size(); i++) {
 			double score;
 			double chance = 0.0;
@@ -349,6 +366,7 @@ public class watermelon {
 			//System.out.println(difdis);
 			chance = difdis / totaldis;
 			score = chance + (1 - chance) * s;
+			seedlist.get(i).score = score;
 			total = total + score;
 		}
 		return total;
@@ -389,7 +407,8 @@ public class watermelon {
 		for (int i = 0; i < treelist.size(); i++) {
 			for (int j = 0; j < nseeds; j++) {
 				if (distance(seedlistin.get(j), treelist.get(i)) < distotree) {
-					System.out.printf("The %d seed (%f, %f) is too close to the tree (%f, %f), %f\n",
+					System.out
+							.printf("The %d seed (%f, %f) is too close to the tree (%f, %f), %f\n",
 									j,
 									seedlistin.get(j).x,
 									seedlistin.get(j).y,
@@ -471,9 +490,9 @@ public class watermelon {
 		if (args.length > 0)
 			map = args[0];
 		if (args.length > 1)
-			L = Integer.parseInt(args[1]);
+			L = Double.parseDouble(args[1]);
 		if (args.length > 2)
-			W = Integer.parseInt(args[2]);
+			W = Double.parseDouble(args[2]);
 		if (args.length > 3)
 			gui = Boolean.parseBoolean(args[3]);
 		if (args.length > 4)

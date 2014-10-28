@@ -8,9 +8,9 @@ import watermelon.sim.Point;
 import watermelon.sim.seed;
 
 public class Player extends watermelon.sim.Player {
-	static double distowall = 1.00;
-	static double distotree = 2.00;
-	static double distoseed = 2.00;
+	static double distowall = 1.0000000001;
+	static double distotree = 2.0000000001;
+	static double distoseed = 2.000000001;
 
 	static final int ALT_GRID_MOVE = 0;
 	static final int ALT_GRID_STAG_MOVE = 1;
@@ -63,7 +63,7 @@ public class Player extends watermelon.sim.Player {
 		ArrayList<seed> seedlist = new ArrayList<seed>();
 		for (double i = distowall; i < width - distowall; i = i + distoseed) {
 			int rowCounter = 0;
-			for (double j = distowall; j < length - distowall; j = j + distoseed) {
+			for (double j = distowall; j < length - distowall; j = j + distoseed + .001) {
 				seed tmp;
 				tmp = new seed(i, j, lastime);
 				boolean add = true;
@@ -94,11 +94,21 @@ public class Player extends watermelon.sim.Player {
 		boolean lastime = false;
 
 		ArrayList<seed> seedlist = new ArrayList<seed>();
-		for (double i = distowall; i < width - distowall; i = i + distoseed) {
-			int rowCounter = 0;
-			for (double j = distowall; j < length - distowall; j = j + Math.tan(Math.toRadians(60.001))) {
+		int rowCounter = 0;
+		for (double j = distowall; j < length - distowall; j = j + Math.tan(Math.toRadians(60.00001))) {
+			for (double i = distowall; i < width - distowall; i = i + distoseed) {
+		
 				seed tmp;
-				double stag_i = (rowCounter % 2 == 0) ? i : i + 1;
+				
+				double stag_i = i;
+				if 	(rowCounter % 2 == 1) {
+					if (i + 1 < width - distowall) {
+						stag_i = i + 1;
+					} else {
+						continue;
+					}
+				}
+				
 				tmp = new seed(stag_i, j, lastime);
 				boolean add = true;
 				for (int f = 0; f < treelist.size(); f++) {
@@ -112,13 +122,15 @@ public class Player extends watermelon.sim.Player {
 				}
 				
 				lastime = !lastime;
-				rowCounter++;
 			}
+
+			rowCounter ++;
 			if (rowCounter % 2 == 0) {
 				lastime = !lastime;
 			}
 
 		}
+
 		return seedlist;
 	}
 
