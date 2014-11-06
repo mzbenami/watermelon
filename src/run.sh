@@ -6,7 +6,7 @@ LENGTH=${2:-50}
 WIDTH=${3:-50}
 GUI=${4:-true}
 GROUP=${5:-group4}
-S=${6:-.5}
+S=${6:-.01}
 
 javac watermelon/sim/watermelon.java
 javac watermelon/$GROUP/Player.java

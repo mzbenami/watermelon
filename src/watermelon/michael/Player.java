@@ -8,8 +8,8 @@ import watermelon.sim.Point;
 import watermelon.sim.seed;
 
 public class Player extends watermelon.sim.Player {
-	static double distowall = 1.00000001;
-	static double distotree = 1.99999999;
+	static double distowall = 1.00;
+	static double distotree = 2.00;
 	static double distoseed = 2.00;
 
 	static final int ALT_GRID_MOVE = 0;
@@ -80,7 +80,7 @@ public class Player extends watermelon.sim.Player {
 				tmp = new seed(i, j, lastime);
 				boolean add = true;
 				for (int f = 0; f < treelist.size(); f++) {
-					if (distance(tmp, treelist.get(f)) < distotree) {
+					if (distance(tmp, treelist.get(f)) <= distotree) {
 						add = false;
 						break;
 					}
@@ -103,7 +103,7 @@ public class Player extends watermelon.sim.Player {
 
 		ArrayList<seed> seedlist = new ArrayList<seed>();
 		int rowCounter = 0;
-		for (double j = distowall; j <= length - distowall; j = j + Math.tan(Math.toRadians(60.0001))) {
+		for (double j = distowall; j <= length - distowall; j = j + Math.tan(Math.toRadians(60.00))) {
 			for (double i = distowall; i <= width - distowall; i = i + distoseed) {
 		
 				seed tmp;
@@ -120,7 +120,7 @@ public class Player extends watermelon.sim.Player {
 				tmp = new seed(stag_i, j, lastime);
 				boolean add = true;
 				for (int f = 0; f < treelist.size(); f++) {
-					if (distance(tmp, treelist.get(f)) < distotree) {
+					if (distance(tmp, treelist.get(f)) <= distotree) {
 						add = false;
 						break;
 					}
@@ -146,6 +146,8 @@ public class Player extends watermelon.sim.Player {
 
 
 		ArrayList<ArrayList<seed>> treeLayouts = new ArrayList<ArrayList<seed>>();
+
+		ArrayList<Pair> treelist = filterTreeList(this.treelist);
 
 		if (treelist.size() < 2) {
 			if (treelist.size() == 1) {
@@ -237,7 +239,7 @@ public class Player extends watermelon.sim.Player {
 				seed tmp = new seed(i, j, lastime);
 				boolean add = true;
 				for (int f = 0; f < treelist.size(); f++) {
-					if (distance(tmp, treelist.get(f)) < distotree) {
+					if (distance(tmp, treelist.get(f)) <= distotree) {
 						add = false;
 						break;
 					}
@@ -262,7 +264,7 @@ public class Player extends watermelon.sim.Player {
 				seed tmp = new seed(i, j, lastime);
 				boolean add = true;
 				for (int f = 0; f < treelist.size(); f++) {
-					if (distance(tmp, treelist.get(f)) < distotree) {
+					if (distance(tmp, treelist.get(f)) <= distotree) {
 						add = false;
 						break;
 					}
@@ -317,6 +319,19 @@ public class Player extends watermelon.sim.Player {
 		return null;
 	}
 
+	private ArrayList<Pair> filterTreeList(ArrayList<Pair> treelist) {
+
+		ArrayList<Pair> filterList = new ArrayList<Pair>();
+
+		for (Pair tree : treelist) {
+			if (isInBounds(tree)) {
+				filterList.add(tree);
+			}
+		}
+
+		return filterList;
+	}
+
 	private boolean isInBounds(Pair point) {
 		if (point.x + distowall <= width && point.y + distowall <= length && point.x - distowall >= 0.0 && point.y - distowall >= 0.0) {
 			return true;
@@ -335,18 +350,41 @@ public class Player extends watermelon.sim.Player {
 		return angle;
 	}
 
+	private ArrayList<seed> iterativeColoring(ArrayList<seed> originalBoard) {
+
+		System.out.println("Score before coloring: " + calculatescore(originalBoard));
+
+		int iterations = 20;
+		for (int i = 0; i < iterations; i++) {
+			Collections.shuffle(originalBoard);
+			for (int j = 0; j < originalBoard.size(); j++) {
+				double scoreBeforeFlip = calculatescoreForSeed(j, originalBoard);
+				originalBoard.get(j).tetraploid = !originalBoard.get(j).tetraploid;
+				double scoreAfterFlip = calculatescoreForSeed(j, originalBoard);
+
+				if (scoreAfterFlip < scoreBeforeFlip) {
+					originalBoard.get(j).tetraploid = !originalBoard.get(j).tetraploid;
+				}
+			}
+		}
+
+		return originalBoard;
+	}
+
 
 	public ArrayList<seed> chooseAltGrid(ArrayList<ArrayList<seed>> solutionList) {
 		double highScore = 0.0;
 		double temp = 0.0;
 		ArrayList<seed> finalList = null;
 		for (ArrayList<seed> solution : solutionList){
+			solution = iterativeColoring(solution);
 			temp = calculatescore(solution);
 			System.out.println("Score for board: " + temp);
 			if (temp >= highScore){
 				highScore = temp;
 				finalList = solution;
 			}
+			System.out.println("High score: " + highScore);
 		}
 		
 		return finalList;
@@ -384,6 +422,40 @@ public class Player extends watermelon.sim.Player {
 			score = chance + (1 - chance) * s;
 			total = total + score;
 		}
+		return total;
+	}
+
+	private double calculatescoreForSeed(int i, ArrayList<seed> seedlist) {
+		double total = 0.0;
+	
+		double score;
+		double chance = 0.0;
+		double totaldis = 0.0;
+		double difdis = 0.0;
+		for (int j = 0; j < seedlist.size(); j++) {
+			if (j != i) {
+				totaldis = totaldis
+						+ Math.pow(
+								distanceseed(seedlist.get(i),
+										seedlist.get(j)), -2);
+			}
+		}
+		for (int j = 0; j < seedlist.size(); j++) {
+			if (j != i
+					&& ((seedlist.get(i).tetraploid && !seedlist.get(j).tetraploid) || (!seedlist
+							.get(i).tetraploid && seedlist.get(j).tetraploid))) {
+				difdis = difdis
+						+ Math.pow(
+								distanceseed(seedlist.get(i),
+										seedlist.get(j)), -2);
+			}
+		}
+		//System.out.println(totaldis);
+		//System.out.println(difdis);
+		chance = difdis / totaldis;
+		score = chance + (1 - chance) * s;
+		total = total + score;
+
 		return total;
 	}
 }
