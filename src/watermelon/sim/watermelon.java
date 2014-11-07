@@ -428,15 +428,7 @@ public class watermelon {
 	}
 
 	void play() {
-		/*
-		 * while (tick <= MAX_TICKS) { if (endOfGame()) break; playStep(); }
-		 * 
-		 * if (tick > MAX_TICKS) { // Time out
-		 * System.err.println("[ERROR] The player is time out!"); } else { //
-		 * Achieve the goal
-		 * System.err.println("[SUCCESS] The player achieves the goal in " +
-		 * tick + " ticks."); }
-		 */
+          playStep();
 	}
 
 /*	void init() {
@@ -508,6 +500,9 @@ public class watermelon {
 		watermelon game = new watermelon();
 		//game.init();
 		game.read(map);
-		game.playgui();
+                if (gui)
+                  game.playgui();
+                else 
+                  game.play();
 	}
 }
