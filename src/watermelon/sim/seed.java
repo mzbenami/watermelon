@@ -18,4 +18,7 @@ public class seed {
         tetraploid = tetra;
         marked = false;
     }
+    public String toString() {
+      return "(" + x + ", " + y + ")";
+    }
 }
