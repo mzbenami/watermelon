@@ -59,10 +59,141 @@ public class Player extends watermelon.sim.Player {
 		ArrayList<ArrayList<seed>> solutionList = new ArrayList<ArrayList<seed>>();
 
 		solutionList.add(altGridMove(treelist, width, length, s));
-		solutionList.add(staggeredMove(treelist, width, length, s));
-		solutionList.addAll(treeLayouts());
-		return chooseAltGrid(solutionList);
+		// solutionList.add(staggeredMove(treelist, width, length, s));
+		// solutionList.addAll(treeLayouts());
+		ArrayList<seed> bestSolution = chooseAltGrid(solutionList);
+		clustersFromBoard(bestSolution);
 
+		return bestSolution;
+
+	}
+
+	private ArrayList<ArrayList<seed>> clustersFromBoard(ArrayList<seed> board) {
+		DisjointSets djs = new DisjointSets(board.size());
+		HashMap<Integer, ArrayList<seed>> rootSeedMap = new HashMap<Integer, ArrayList<seed>>();
+		ArrayList<ArrayList<seed>> clusterList = new ArrayList<ArrayList<seed>>();
+
+		for (int i = 0; i < board.size(); i++) {
+			for (int j = 0; j < board.size(); j++) {
+				if (i != j && distanceseed(board.get(i), board.get(j)) < distoseed + 0.0000001) {
+					int i_root = djs.find(i);
+					int j_root = djs.find(j);
+
+					if (i_root != j_root) {
+						djs.union(i_root, j_root);
+					}
+				} 
+			}
+		}
+
+		for (int i = 0; i < board.size(); i++) {
+			int i_root = djs.find(i);
+
+			ArrayList<seed> cluster;
+			if ((cluster = rootSeedMap.get(i_root)) == null) {
+				cluster = new ArrayList<seed>();
+				rootSeedMap.put(i_root, cluster);
+			}
+
+			cluster.add(board.get(i));
+		}
+
+		for (Integer root : rootSeedMap.keySet()) {
+			clusterList.add(rootSeedMap.get(root));
+		}
+
+		for (ArrayList<seed> cluster : clusterList) {
+			System.out.println("New cluster: ");
+			for (seed mySeed : cluster) {
+				System.out.println(mySeed.x + " " + mySeed.y);
+			}
+		}
+
+		return clusterList;
+	}
+
+	private ArrayList<seed> makeClusteredBoard() {
+		
+		boolean lastime = false;
+
+		ArrayList<seed> seedlist = new ArrayList<seed>();
+		int rowCounter = 0;
+		for (double j = 5.0; j <= 9.0; j = j + Math.tan(Math.toRadians(60.00))) {
+			for (double i = 3.0; i <= 7.0; i = i + distoseed) {
+		
+				seed tmp;
+				
+				double stag_i = i;
+				if 	(rowCounter % 2 == 1) {
+					if (i + 1 < width - distowall) {
+						stag_i = i + 1;
+					} else {
+						continue;
+					}
+				}
+				
+				tmp = new seed(stag_i, j, lastime);
+				boolean add = true;
+				for (int f = 0; f < treelist.size(); f++) {
+					if (distance(tmp, treelist.get(f)) <= distotree) {
+						add = false;
+						break;
+					}
+				}
+				if (add) {
+					seedlist.add(tmp);
+				}
+				
+				lastime = !lastime;
+			}
+
+			rowCounter ++;
+			if (rowCounter % 2 == 0) {
+				lastime = !lastime;
+			}
+
+		}
+
+		for (double j = 19.0; j <= 23.0; j = j + Math.tan(Math.toRadians(60.00))) {
+			for (double i = 8.0; i <= 12.0; i = i + distoseed) {
+		
+				seed tmp;
+				
+				double stag_i = i;
+				if 	(rowCounter % 2 == 1) {
+					if (i + 1 < width - distowall) {
+						stag_i = i + 1;
+					} else {
+						continue;
+					}
+				}
+				
+				tmp = new seed(stag_i, j, lastime);
+				boolean add = true;
+				for (int f = 0; f < treelist.size(); f++) {
+					if (distance(tmp, treelist.get(f)) <= distotree) {
+						add = false;
+						break;
+					}
+				}
+				if (add) {
+					seedlist.add(tmp);
+				}
+				
+				lastime = !lastime;
+			}
+
+			rowCounter ++;
+			if (rowCounter % 2 == 0) {
+				lastime = !lastime;
+			}
+
+		}
+
+		clustersFromBoard(seedlist);
+
+
+		return seedlist;
 	}
 
 
@@ -377,6 +508,11 @@ public class Player extends watermelon.sim.Player {
 		double temp = 0.0;
 		ArrayList<seed> finalList = null;
 		for (ArrayList<seed> solution : solutionList){
+			temp = calculatescore(solution);
+			if (temp < highScore - 6) {
+				System.out.println("Not lookng at: " + temp);
+				continue;
+			}
 			solution = iterativeColoring(solution);
 			temp = calculatescore(solution);
 			System.out.println("Score for board: " + temp);
@@ -384,7 +520,7 @@ public class Player extends watermelon.sim.Player {
 				highScore = temp;
 				finalList = solution;
 			}
-			System.out.println("High score: " + highScore);
+				System.out.println("High score: " + highScore);
 		}
 		
 		return finalList;
