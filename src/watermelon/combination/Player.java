@@ -1,10 +1,10 @@
 package watermelon.combination;
 
 import java.util.*;
+import java.awt.Point;
 import java.lang.Math;
 
 import watermelon.sim.Pair;
-import watermelon.sim.Point;
 import watermelon.sim.seed;
 
 public class Player extends watermelon.sim.Player {
@@ -21,6 +21,7 @@ public class Player extends watermelon.sim.Player {
 
   final int MAX_ANGLE = 45; //Maximum rotation for tree packing
   final int ANGLE_INCREMENT = 15; //Iterator for rotation in tree packing
+  final int SCORE_THRESHOLD = 20;
   private double angle;
 
   final int GRID_WIDTH = 2;
@@ -103,7 +104,7 @@ public class Player extends watermelon.sim.Player {
     ArrayList<Pair> treelist = new ArrayList<Pair>();
     for (Pair tree : trees) {
       if (isInBounds(tree)) {
-        treelist.add(tree);
+        treelist.add(new Pair(tree.x,tree.y));
       }
     }
 
@@ -128,9 +129,9 @@ public class Player extends watermelon.sim.Player {
           treeLayouts.add(boardFromPointAndAngle(treelist.get(i)));
           treeLayouts.add(boardFromPointAndAngle(treelist.get(j)));
         }
-        System.out.println("Inner");
+        //System.out.println("Inner");
       }
-      System.out.println("Outer loop " + (outer++));
+      //System.out.println("Outer loop " + (outer++));
     }
 
     return treeLayouts;
@@ -139,7 +140,7 @@ public class Player extends watermelon.sim.Player {
 
   private ArrayList<seed> boardFromPointAndAngle(Pair point) {
 
-    System.out.println("Starting board");
+    //System.out.println("Starting board");
     ArrayList<seed> boardSeedList = new ArrayList<seed>();
     ArrayList<seed> boardGhostList = new ArrayList<seed>();
 
@@ -171,7 +172,7 @@ public class Player extends watermelon.sim.Player {
 
     recolorTreeNeighbors(boardSeedList,boardGhostList);
 
-    System.out.println("Finished with board");
+    //System.out.println("Finished with board");
     return boardSeedList;
   }
 
@@ -267,7 +268,7 @@ public class Player extends watermelon.sim.Player {
 
   //Recolor seeds neighboring trees if it will increase our score
   public void recolorTreeNeighbors(ArrayList<seed> seeds, ArrayList<seed> ghosts){
-    System.out.println("About to generate Graph");
+    //System.out.println("About to generate Graph");
     Hashtable<seed,ArrayList<seed>> graph = generateGraph(seeds);
     LinkedList<seed> flippable = new LinkedList<seed>(); //seeds that we will consider flipping
     seed tmp;
@@ -321,10 +322,11 @@ public class Player extends watermelon.sim.Player {
 
   //Generate a seed graph using the radar technique
   public Hashtable<seed,ArrayList<seed>> generateGraph(ArrayList<seed> seedlist){
-    Hashtable<Pair,ArrayList<seed>> grid = new Hashtable<Pair,ArrayList<seed>>();
+    Hashtable<Point,ArrayList<seed>> grid = new Hashtable<Point,ArrayList<seed>>();
     Hashtable<seed,ArrayList<seed>> neighbors = new Hashtable<seed,ArrayList<seed>>();
     
     int rotate;
+    int box_x,box_y;
     double length;
     double x,y;
     double connect,withinReach;//distaces between seeds and end of "radar"
@@ -338,33 +340,30 @@ public class Player extends watermelon.sim.Player {
     }
     double biggestL = distoseed;
 
-    //GENERATING THE GRAPH IS THE BIGGEST TIME SUCK IN THE ALGORIHTM, SEEMINGLY
-    //TODO: NEED TO MAKE KEY TO GRID MAP AN INTEGER PAIR, NOT THE NORMAL PAIR DATATYPE
     //Create my grid
-    System.out.println("Looping");
-    for (int i = 0; i <= w - GRID_WIDTH; i+=GRID_WIDTH){
-      for (int j = 0; j <= l - GRID_WIDTH; j+=GRID_WIDTH){
-        grid.put(new Pair(i,j),new ArrayList<seed>());
+    //System.out.println("Looping");
+    for (int i = 0; i < w; i+=GRID_WIDTH){
+      for (int j = 0; j < l; j+=GRID_WIDTH){
+        grid.put(new Point(i,j),new ArrayList<seed>());
       }
     }
 
-    System.out.println("Making grid");
+    //System.out.println("Making grid");
     for (seed s : seedlist) {
       ArrayList<seed> cellList;
-      Pair containingCell = new Pair((int)(s.x - (s.x % GRID_WIDTH)), (int) (s.y  - (s.y % GRID_WIDTH)));
-      System.out.println(containingCell.x + " " + containingCell.y);
+      Point containingCell = new Point((int)(s.x - (s.x % GRID_WIDTH)), (int) (s.y  - (s.y % GRID_WIDTH)));
 
       cellList = grid.get(containingCell);
       cellList.add(s);
       grid.put(containingCell,cellList);
       //Check the reach of the seed
       for (int d = 0; d < 360; d++){
-        x = distoseed * Math.cos(Math.toRadians(d));
-        y = distoseed * Math.sin(Math.toRadians(d));
-        containingCell.x = (int) (s.x - (s.x % GRID_WIDTH));
-        containingCell.y = (int) (s.y - (s.y % GRID_WIDTH));
+        x = s.x + distowall * Math.cos(Math.toRadians(d));
+        y = s.y + distowall * Math.sin(Math.toRadians(d));
+        containingCell.x = (int) (x - (x % GRID_WIDTH));
+        containingCell.y = (int) (y - (y % GRID_WIDTH));
         //Add new seed to grid cell
-        if(!grid.get(containingCell).contains(s)){
+        if(isInBounds(containingCell) && !grid.get(containingCell).contains(s)){
           cellList = grid.get(containingCell);
           cellList.add(s);
           grid.put(containingCell,cellList);
@@ -372,14 +371,14 @@ public class Player extends watermelon.sim.Player {
       }
     }
 
-    System.out.println("Done with grid");
+    //System.out.println("Done with grid");
+      long lstart = System.currentTimeMillis();
     for (seed s : seedlist){
       //Adjacency list for this seed
       ArrayList<seed> adjacencies = neighbors.get(s);
       //Adjacency list for seeds that we find in our search
       ArrayList<seed> nAdjacencies = new ArrayList<seed>();;
 
-      long lstart = System.currentTimeMillis();
       for (int degrees = 0; degrees < 360; degrees ++){
         length = distoseed;//Reset length of radar
         foundNeighbor = false;
@@ -390,16 +389,25 @@ public class Player extends watermelon.sim.Player {
           x = length * Math.cos(Math.toRadians(degrees));
           y = length * Math.sin(Math.toRadians(degrees));
           origRadar = new Pair(s.x + x, s.y + y);
+          box_x = (int)(s.x + x);
+          box_y = (int)( s.y + y);
+          Point bounding = new Point((int)(box_x - (box_x % GRID_WIDTH)), (int)(box_y - (box_y % GRID_WIDTH)));
+
 
           //If we're out of bounds, rotate radar
-          if (!isInBounds(origRadar)){
+          if (!isInBounds(origRadar) || ! isInBounds(bounding)){
             break;
           }
 
           
-          for (seed r : seedlist){
-            if (r.equals(s))
+          //System.out.println("Bounding " + bounding + " has a total number of seeds: " + grid.get(bounding).size());
+          for (seed r : grid.get(bounding)){
+            //System.out.println("CHecking seed " + r + " with respect to seed " + s + " at degrees " + degrees);
+            if (r.equals(s)){
+              if (grid.get(bounding).size() == 1)
+                foundNeighbor = true;//Make sure we still break out of the while loop
               continue;
+            }
             endRadar.x = origRadar.x;
             endRadar.y = origRadar.y;
             withinReach = distance(r,endRadar);
@@ -415,9 +423,13 @@ public class Player extends watermelon.sim.Player {
                   neighbors.put(r,nAdjacencies);
               }
               //Find the boundary of the seed that we found with the radar
-              while (radarToSeed(s,r,degrees,connect) <= distowall){
+              //System.out.println("Moving to boundary of seed");
+              while (degrees < 360 && (radarToSeed(s,r,degrees,connect) <= distowall || !isInBounds(origRadar) || radarInBounding(origRadar,bounding))){
                 degrees++;
+                origRadar.x = length * Math.cos(Math.toRadians(degrees));
+                origRadar.y = length * Math.sin(Math.toRadians(degrees));
               }
+              //System.out.println("Moved forward " + degrees + " degrees for seed " + s);
               break;
             }
           }
@@ -433,17 +445,20 @@ public class Player extends watermelon.sim.Player {
           }
         }
       }
-        long lend = System.currentTimeMillis();
-      System.out.println("Degree loop " + (lend - lstart));
-      System.out.println("Biggest Length: " + biggestL);
+      //System.out.println("Biggest Length: " + biggestL);
 
       //Add our adjacency list to our graph
       neighbors.put(s,adjacencies);
 
     }
+        long lend = System.currentTimeMillis();
+    //System.out.println("Degree loop " + (lend - lstart));
     return neighbors;
   }
 
+  public boolean radarInBounding(Pair radar, Point bounding){
+    return (radar.x >= bounding.x && radar.y >= bounding.y && radar.x <= bounding.x + GRID_WIDTH && radar.y <= bounding.y + GRID_WIDTH);
+  }
 
   //Return the distance between a seed's center and
   //a given radar
@@ -485,23 +500,27 @@ public class Player extends watermelon.sim.Player {
   //a higher score.
   public ArrayList<seed> chooseAltGrid(ArrayList<ArrayList<seed>> solutionList) {
     double highScore = 0.0;
+    double origScore = highScore;
     double temp = 0.0;
+    seed tmp;
     ArrayList<seed> finalList = null;
+    ArrayList<seed> highestBoard = null;
     System.out.println(solutionList.size());
+    int count = 0;
+    double highestBoardScore = 0.0;
+    //TODO: Redo this to the original second phase method (find highest board then recolor it)
+    
     for (ArrayList<seed> solution : solutionList){
       temp = calculatescore(solution);
-      if (temp > highScore){
+      if (highScore < temp){
         highScore = temp;
         finalList = solution;
       }
     }
-    System.out.println("Got highest board!");
-    seed tmp;
-    ArrayList<seed> actual = (ArrayList<seed>)finalList.clone();
-    //Do this process 20 ttimes, picking the best result
+    System.out.println("Score for board highest board is " + highScore);
     for (int i = 0; i < 200; i++){
       //Try flipping every seed
-      for (seed s : actual){
+      for (seed s : finalList){
         tmp = s;
         tmp.tetraploid = !tmp.tetraploid;
         //If our change doesn't help our score, undo it.
@@ -512,15 +531,16 @@ public class Player extends watermelon.sim.Player {
         }
       }
       temp = calculatescore(finalList);
-      System.out.println("Score is " + temp);
+      //System.out.println("Score is " + temp);
       if (temp > highScore){
         highScore = temp;
       }
-      else
+      else{
         break;
+      }
     }
 
-    return actual;
+    return finalList;
   }
 
   private double calculatescore(ArrayList<seed> seedlist) {
@@ -575,6 +595,9 @@ public class Player extends watermelon.sim.Player {
 
   public boolean isInBounds (Pair p){
     return p.x >= 0.0 && p.y >= 0.0 && p.x <= w && p.y <= l;
+  }
+  public boolean isInBounds (Point p){
+    return p.x >= 0.0 && p.y >= 0.0 && p.x < w && p.y < l;
   }
 
 }
