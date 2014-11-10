@@ -98,7 +98,11 @@ public class Player extends watermelon.sim.Player {
 		for (double j = distowall; j <= length - distowall; j = j + Math.tan(Math.toRadians(60.00001))) {
 			for (double i = distowall; i <= width - distowall; i = i + distoseed) {
 		
-				seed tmp;
+				boolean makespace = false;
+                if (j + Math.tan(Math.toRadians(60.00001)) >= length - distowall) {
+                    makespace = true;
+                 }
+                seed tmp;
 				
 				double stag_i = i;
 				if 	(rowCounter % 2 == 1) {
@@ -117,6 +121,15 @@ public class Player extends watermelon.sim.Player {
 						break;
 					}
 				}
+                if (makespace) {
+                     tmp.y = length - distowall;
+                 }
+                 for (int f = 0; f < treelist.size(); f++) {
+                     if (distance(tmp, treelist.get(f)) < distotree) {
+                         add = false;
+                         break;
+                     }
+                 }
 				if (add) {
 					seedlist.add(tmp);
 				}
