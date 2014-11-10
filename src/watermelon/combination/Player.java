@@ -340,29 +340,35 @@ public class Player extends watermelon.sim.Player {
     }
     double biggestL = distoseed;
 
-    //Create my grid
-    //System.out.println("Looping");
+    //Start of grid creation and population
+    //Create empty grid cells
     for (int i = 0; i < w; i+=GRID_WIDTH){
       for (int j = 0; j < l; j+=GRID_WIDTH){
         grid.put(new Point(i,j),new ArrayList<seed>());
       }
     }
 
-    //System.out.println("Making grid");
+    //Populate grid
     for (seed s : seedlist) {
       ArrayList<seed> cellList;
+
+      //Top-left corner of cell where the center of seed s resides
       Point containingCell = new Point((int)(s.x - (s.x % GRID_WIDTH)), (int) (s.y  - (s.y % GRID_WIDTH)));
 
+      //Add current seed to the list of seeds that are included in this cell
       cellList = grid.get(containingCell);
       cellList.add(s);
       grid.put(containingCell,cellList);
-      //Check the reach of the seed
+
+      //Check the boundary of the current seed:
+      // If at any point we find ourselves in another cell, add the current
+      // seed to that cell too since part of the seed resides there.
       for (int d = 0; d < 360; d++){
         x = s.x + distowall * Math.cos(Math.toRadians(d));
         y = s.y + distowall * Math.sin(Math.toRadians(d));
         containingCell.x = (int) (x - (x % GRID_WIDTH));
         containingCell.y = (int) (y - (y % GRID_WIDTH));
-        //Add new seed to grid cell
+        //Add new seed to grid cell if the cell is in our bounds and we havent' added the seed already
         if(isInBounds(containingCell) && !grid.get(containingCell).contains(s)){
           cellList = grid.get(containingCell);
           cellList.add(s);
@@ -371,8 +377,8 @@ public class Player extends watermelon.sim.Player {
       }
     }
 
-    //System.out.println("Done with grid");
-      long lstart = System.currentTimeMillis();
+    //End of grid creation and population
+
     for (seed s : seedlist){
       //Adjacency list for this seed
       ArrayList<seed> adjacencies = neighbors.get(s);
