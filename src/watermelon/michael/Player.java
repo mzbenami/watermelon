@@ -58,9 +58,9 @@ public class Player extends watermelon.sim.Player {
 
 		ArrayList<ArrayList<seed>> solutionList = new ArrayList<ArrayList<seed>>();
 
-		solutionList.add(altGridMove(treelist, width, length, s));
+		// solutionList.add(altGridMove(treelist, width, length, s));
 		// solutionList.add(staggeredMove(treelist, width, length, s));
-		// solutionList.addAll(treeLayouts());
+		solutionList.addAll(treeLayouts());
 		ArrayList<seed> bestSolution = chooseAltGrid(solutionList);
 		clustersFromBoard(bestSolution);
 

@@ -553,14 +553,29 @@ public class Player extends watermelon.sim.Player {
     ArrayList<seed> finalList = null;
     int count = 0;
     int highCount = 0;
+    int thresholdCount = 0;
+    double threshold = 0.0;
+    double maxMargin = 0.0;
     for (ArrayList<seed> solution : solutionList){
       temp = calculatescore(solution);
-      if (temp < highScore - 6) {
-        System.out.println("Not lookng at: " + temp);
+      if (thresholdCount < 10) {
+        threshold = temp;
+      } else {
+        threshold = maxMargin + 2;
+      }
+
+      if (temp < highScore - threshold) {
+        System.out.println("Not looking at: " + temp);
         continue;
       }
+
       solution = iterativeColoring(solution);
-      temp = calculatescore(solution);
+      double margin = calculatescore(solution) - temp;
+      temp += margin;
+      if (margin > maxMargin) {
+        maxMargin = margin;
+      }
+
       System.out.println("Score for board: " + temp);
       if (temp >= highScore){
         highScore = temp;
@@ -569,8 +584,9 @@ public class Player extends watermelon.sim.Player {
       }
       System.out.println("High score: " + highScore);
       count++;
+      thresholdCount++;
     }
-    System.out.println("Highest scoreing board: " + highCount);
+    System.out.println("Highest scoring board: " + highCount);
 
     return finalList;
     /*
@@ -690,6 +706,48 @@ public class Player extends watermelon.sim.Player {
 		}
 		return true;
 	}
+
+  boolean validateseed(seed mySeed, Hashtable<Point, ArrayList<seed>> grid) {
+    
+    // for (int i = 0; i < 360; i++) {
+    //   Point circumPoint = new Point(Math.cos(Math.toRadians(i)), Math.sin(Math.toRadians(i)));
+    //   Point containingCell = new Point((int)(circumPoint.x - (circumPoint.x % GRID_WIDTH)), (int) (circumPoint.y  - (circumPoint.y % GRID_WIDTH)));
+    //   ArrayList<seed> seedsInCell = grid.get(containingCell);
+
+    //   ArrayList<seed> mySeedAndCell = new ArrayList<seed>();
+    //   mySeedAndCell.addAll(seedsInCell);
+    //   mySeedAndCell.add(mySeed);
+
+    //   if (!validateseed(mySeedAndCell)) return false;
+    // }
+
+    // return true;
+
+    // Alternative method
+    ArrayList<Point> cellPoints = new ArrayList<Points>();
+    ArrayList<seed> nearbySeeds = new ArrayList<seed>();
+    nearbySeeds.add(mySeed);
+    
+    cellPoints.add(new Point((int)(mySeed.x - (mySeed.x % GRID_WIDTH)), (int) (mySeed.y  - (mySeed.y % GRID_WIDTH))));
+    cellPoints.add(new Point((int)(mySeed.x - (mySeed.x % GRID_WIDTH)), (int) (mySeed.y  - (mySeed.y % GRID_WIDTH) - GRID_WIDTH)));
+    cellPoints.add(new Point((int)(mySeed.x - (mySeed.x % GRID_WIDTH)), (int) (mySeed.y  - (mySeed.y % GRID_WIDTH) + GRID_WIDTH)));
+    cellPoints.add(new Point((int)(mySeed.x - (mySeed.x % GRID_WIDTH) + GRID_WIDTH), (int) (mySeed.y  - (mySeed.y % GRID_WIDTH))));
+    cellPoints.add(new Point((int)(mySeed.x - (mySeed.x % GRID_WIDTH) - GRID_WIDTH), (int) (mySeed.y  - (mySeed.y % GRID_WIDTH))));
+
+    cellPoints.add(new Point((int)(mySeed.x - (mySeed.x % GRID_WIDTH) + GRID_WIDTH), (int) (mySeed.y  - (mySeed.y % GRID_WIDTH) - GRID_WIDTH)));
+    cellPoints.add(new Point((int)(mySeed.x - (mySeed.x % GRID_WIDTH) + GRID_WIDTH), (int) (mySeed.y  - (mySeed.y % GRID_WIDTH) + GRID_WIDTH)));
+    cellPoints.add(new Point((int)(mySeed.x - (mySeed.x % GRID_WIDTH) - GRID_WIDTH), (int) (mySeed.y  - (mySeed.y % GRID_WIDTH) - GRID_WIDTH)));
+    cellPoints.add(new Point((int)(mySeed.x - (mySeed.x % GRID_WIDTH) - GRID_WIDTH), (int) (mySeed.y  - (mySeed.y % GRID_WIDTH) + GRID_WIDTH)));
+
+    for (Point cellPoint : cellPoints) {
+      if (isInBounds(cellPoint)) {
+        nearbySeeds.addAll(grid.get(cellPoint));
+      }
+    }
+
+    return validateseed(nearbySeeds);
+
+  }
   
   public void init() {
   }
@@ -710,7 +768,7 @@ public class Player extends watermelon.sim.Player {
     return p.x >= 0.0 && p.y >= 0.0 && p.x <= w && p.y <= l;
   }
   public boolean isInBounds (Point p){
-    return p.x >= 0.0 && p.y >= 0.0 && p.x < w && p.y < l;
+    return p.x >= 0.0 && p.y >= 0.0 && p.x <= w && p.y <= l;
   }
 
 }
