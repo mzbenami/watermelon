@@ -69,6 +69,10 @@ public class Player extends watermelon.sim.Player {
     double j;
     for (j = distowall; j <= l - distowall; j = j + lengthIterator) {
       for (double i = distowall; i <= w - distowall; i = i + distoseed) {
+        boolean makespace = false;
+        if (j + Math.tan(Math.toRadians(60.00)) >= l - distowall) {
+          makespace = true;
+        }
 
         x = i;
         if (isStaggered && rowCounter % 2 == 1){
@@ -79,7 +83,7 @@ public class Player extends watermelon.sim.Player {
           }
         }
 
-        lastime = addSeed(seedlist,ghostseeds,x,j,lastime);
+        lastime = addSeed(seedlist,ghostseeds,x,j,lastime,makespace);
       }
       rowCounter ++;
       if (rowCounter % 2 == 0) {
@@ -88,7 +92,6 @@ public class Player extends watermelon.sim.Player {
     }
 
     recolorTreeNeighbors(seedlist,ghostseeds);
-
     return seedlist;
   }
 
@@ -128,7 +131,10 @@ public class Player extends watermelon.sim.Player {
           treeLayouts.add(boardFromPointAndAngle(treelist.get(i)));
           treeLayouts.add(boardFromPointAndAngle(treelist.get(j)));
         }
+        System.out.println("Inner");
       }
+      System.out.println("Outer " + outer);
+      outer++;
     }
 
     return treeLayouts;
@@ -166,7 +172,9 @@ public class Player extends watermelon.sim.Player {
       lineSeedList = addLineToBoard(lineSeedList,boardSeedList,boardGhostList,(-1) * x_unit, (-1) * y_unit);
     }
 
+    //Add seeds and do ghostseed recoloring 
     recolorTreeNeighbors(boardSeedList,boardGhostList);
+
 
     return boardSeedList;
   }
@@ -212,7 +220,7 @@ public class Player extends watermelon.sim.Player {
     double j = startPoint.y;
 
     while (i + distowall <= w && j + distowall <= l && i - distowall >= 0.0 && j - distowall >= 0.0) {
-      lastime = addSeed(seedlist, ghostseeds,i,j,lastime);
+      lastime = addSeed(seedlist, ghostseeds,i,j,lastime,false);
       i += x_inc;
       j += y_inc;
 
@@ -284,7 +292,6 @@ public class Player extends watermelon.sim.Player {
     }
 
     //Shuffle seeds so we don't just do top-down left-right every time
-    //TODO: Do this multiple times?
     Collections.shuffle(flippable,rand);
 
     highScore = calculatescore(seeds);
@@ -314,24 +321,11 @@ public class Player extends watermelon.sim.Player {
   //Generate a seed graph using the radar technique
   public Hashtable<seed,ArrayList<seed>> generateGraph(ArrayList<seed> seedlist){
     Hashtable<Point,ArrayList<seed>> grid = new Hashtable<Point,ArrayList<seed>>();
-    Hashtable<seed,ArrayList<seed>> neighbors = new Hashtable<seed,ArrayList<seed>>();
     
-    int box_x,box_y;
-    double length;
-    double x,y;
-    double connect,withinReach;//distances between seeds and end of "radar"
-    boolean foundNeighbor;
-
-    Pair radar = new Pair();
-
-    for (seed s : seedlist){
-      neighbors.put(s, new ArrayList<seed>(seedlist.size()));
-    }
-
     //Start of grid creation and population
     //Create empty grid cells
-    for (int i = 0; i < w; i+=GRID_WIDTH){
-      for (int j = 0; j < l; j+=GRID_WIDTH){
+    for (int i = 0; i <= w; i+=GRID_WIDTH){
+      for (int j = 0; j <= l; j+=GRID_WIDTH){
         grid.put(new Point(i,j),new ArrayList<seed>());
       }
     }
@@ -352,10 +346,12 @@ public class Player extends watermelon.sim.Player {
       // If at any point we find ourselves in another cell, add the current
       // seed to that cell too since part of the seed resides there.
       for (int d = 0; d < 360; d++){
-        x = s.x + distowall * Math.cos(Math.toRadians(d));
-        y = s.y + distowall * Math.sin(Math.toRadians(d));
+        double x = s.x + distowall * Math.cos(Math.toRadians(d));
+        double y = s.y + distowall * Math.sin(Math.toRadians(d));
         containingCell.x = (int) (x - (x % GRID_WIDTH));
         containingCell.y = (int) (y - (y % GRID_WIDTH));
+        if (x <= containingCell.x || y <= containingCell.y)
+          continue;
         //Add new seed to grid cell if the cell is in our bounds and we haven't added the seed already
         if(isInBounds(containingCell) && !grid.get(containingCell).contains(s)){
           cellList = grid.get(containingCell);
@@ -365,11 +361,31 @@ public class Player extends watermelon.sim.Player {
       }
     }
     //End of grid creation and population
+    //Populate grid
 
-    //Construct graph of seeds
+    useGrid(seedlist, "add_seeds",grid);
+    return useGrid(seedlist, "get_neighbors",grid);
+
+  }
+
+  public Hashtable<seed,ArrayList<seed>> useGrid(ArrayList<seed> seedlist, String str, Hashtable<Point,ArrayList<seed>> grid){
+    Hashtable<seed,ArrayList<seed>> neighbors = new Hashtable<seed,ArrayList<seed>>();
+
+    int box_x,box_y;
+    double length;
+    double x,y;
+    double connect,withinReach;//distances between seeds and end of "radar"
+    boolean foundNeighbor;
+
+    Pair radar = new Pair();
+
+    for (seed s : seedlist){
+      neighbors.put(s, new ArrayList<seed>(seedlist.size()));
+    }
+
+    //Try to Add extra seeds
     ArrayList<seed> finalList = (ArrayList<seed>) seedlist.clone();
     for (seed s : finalList){
-
       //Adjacency list for this seed
       ArrayList<seed> adjacencies = neighbors.get(s);
 
@@ -401,25 +417,45 @@ public class Player extends watermelon.sim.Player {
             break;
           }
 
-          //Check if we can place a seed at the end of our radar
-          seed fill = new seed(s.x + x, s.y + y, false);
-          seedlist.add(fill);
-          if (!validateseed(seedlist))
-            seedlist.remove(fill);
+          if (str.equals("add_seeds")){
+            //Check if we can place a seed at the end of our radar
+            seed fill = new seed(s.x + x, s.y + y, false);
+            seedlist.add(fill);
+            //TODO: Start here
+            if (!validateseed(fill,grid))
+              seedlist.remove(fill);
+            else{
+              //System.out.println("Keeping seed " + fill);
+              ArrayList<seed> cl = grid.get(bounding);
+              cl.add(fill);
+              grid.put(bounding,cl);
+              neighbors.put(fill,new ArrayList<seed>());
+              for (int d = 0; d < 360; d++){
+                Point containingCell = new Point();;
+                x = fill.x + distowall * Math.cos(Math.toRadians(d));
+                y = fill.y + distowall * Math.sin(Math.toRadians(d));
+                containingCell.x = (int) (x - (x % GRID_WIDTH));
+                containingCell.y = (int) (y - (y % GRID_WIDTH));
+                //Add new seed to grid cell if the cell is in our bounds and we haven't added the seed already
+                if(isInBounds(containingCell) && !grid.get(containingCell).contains(fill)){
+                  ArrayList<seed> cellList;
+                  cellList = grid.get(containingCell);
+                  cellList.add(fill);
+                  grid.put(containingCell,cellList);
+                }
+              }
+            }
+          }
           
           //Add seeds within reach of our radar to our list of neighbors for the current seed
           for (seed r : grid.get(bounding)){
             if (r.equals(s)){
-              //Make sure we still break out of the while loop if we only have one seed in this cell
-              if (grid.get(bounding).size() == 1)
-                foundNeighbor = true;
               continue;
             }
-
             withinReach = distance(r,radar);//distance between found seed and radar
             connect = distanceseed(r,s);//distance between found seed and current seed
             if (withinReach <= distowall){
-              if (!adjacencies.contains(r)) {
+              if (str.equals("get_neighbors") && !adjacencies.contains(r)) {
                 //Our radar's endpoint is within r's 1 meter radius
                 adjacencies.add(r);
                 foundNeighbor = true;
@@ -447,14 +483,12 @@ public class Player extends watermelon.sim.Player {
           }
         }
       }
-
       //Add our adjacency list to our graph
       neighbors.put(s,adjacencies);
-
     }
-
     return neighbors;
   }
+
 
   //Return true if the given pair is inside the grid cell whose top-left point is bounding
   public boolean radarInBounding(Pair radar, Point bounding){
@@ -473,7 +507,7 @@ public class Player extends watermelon.sim.Player {
   }
 
   //Add a seed unless a tree is blocking it
-  public boolean addSeed(ArrayList<seed> slist, ArrayList<seed> ghosts, double x, double y, boolean ploidy){
+  public boolean addSeed(ArrayList<seed> slist, ArrayList<seed> ghosts, double x, double y, boolean ploidy, boolean makespace){
     seed tmp;
     boolean add = true;
     tmp = new seed(x,y,ploidy);
@@ -482,6 +516,9 @@ public class Player extends watermelon.sim.Player {
         add = false;
         break;
       }
+    }
+    if (makespace) {
+      tmp.y = l - distowall;
     }
     if (add) 
       slist.add(tmp);
@@ -589,54 +626,6 @@ public class Player extends watermelon.sim.Player {
     System.out.println("Highest scoring board: " + highCount);
 
     return finalList;
-    /*
-    double highScore = 0.0;
-    double origScore = highScore;
-    double temp = 0.0;
-    seed tmp;
-    ArrayList<seed> finalList = null;
-    ArrayList<seed> highestBoard = null;
-    System.out.println(solutionList.size());
-    int count = 0;
-    double highestBoardScore = 0.0;
-    //TODO: Redo this to the original second phase method (find highest board then recolor it)
-    
-    int boardnum = 0;
-    count = 0;
-    for (ArrayList<seed> solution : solutionList){
-      temp = calculatescore(solution);
-      if (highScore < temp){
-        highScore = temp;
-        finalList = solution;
-        boardnum = count;
-      }
-      count++;
-    }
-    System.out.println("Score for board highest board " + boardnum + "  is " + highScore);
-    for (int i = 0; i < 200; i++){
-      //Try flipping every seed
-      for (seed s : finalList){
-        tmp = s;
-        tmp.tetraploid = !tmp.tetraploid;
-        //If our change doesn't help our score, undo it.
-        //If it does, randomly decide if we should undo it or keep it,
-        //since the local choice might not be the best global choice.
-        if (calculatescore(finalList) < highScore){
-          tmp.tetraploid = !tmp.tetraploid;
-        }
-      }
-      temp = calculatescore(finalList);
-      System.out.println("Score is " + temp);
-      if (temp > highScore){
-        highScore = temp;
-      }
-      else{
-        break;
-      }
-    }
-
-    return finalList;
-    */
   }
 
   private double calculatescore(ArrayList<seed> seedlist) {
@@ -673,55 +662,41 @@ public class Player extends watermelon.sim.Player {
     }
     return total;
   }
-	boolean validateseed(ArrayList<seed> seedlistin) {
-		int nseeds = seedlistin.size();
 
-		for (int i = 0; i < nseeds; i++) {
-			for (int j = i + 1; j < nseeds; j++) {
-				if (distanceseed(seedlistin.get(i), seedlistin.get(j)) < distoseed - .00000001) {
 
-                                
-					return false;
-				}
-			}
-		}
-		for (int i = 0; i < nseeds; i++) {
-			if (seedlistin.get(i).x < 0 || seedlistin.get(i).x > w
-					|| seedlistin.get(i).y < 0 || seedlistin.get(i).y > l) {
-				return false;
-			}
-			if (seedlistin.get(i).x <  distowall - .00000001
-					|| w - seedlistin.get(i).x < distowall -.00000001
-					|| seedlistin.get(i).y < distowall -.00000001
-					|| l - seedlistin.get(i).y < distowall -.00000001) {
-				return false;
-			}
-		}
-		for (int i = 0; i < trees.size(); i++) {
-			for (int j = 0; j < nseeds; j++) {
-				if (distance(seedlistin.get(j), trees.get(i)) < distotree - .00000001) {
-					return false;
-				}
-			}
-		}
-		return true;
-	}
+  boolean validateseed(ArrayList<seed> seedlistin) {
+    int nseeds = seedlistin.size();
+
+    for (int i = 0; i < nseeds; i++) {
+      for (int j = i + 1; j < nseeds; j++) {
+        if (distanceseed(seedlistin.get(i), seedlistin.get(j)) < distoseed - .00000001) {
+          return false;
+        }
+      }
+    }
+    for (int i = 0; i < nseeds; i++) {
+      if (seedlistin.get(i).x < 0 || seedlistin.get(i).x > w || seedlistin.get(i).y < 0 || seedlistin.get(i).y > l) {
+        return false;
+      }
+      if (seedlistin.get(i).x <  distowall - .00000001
+          || w - seedlistin.get(i).x < distowall -.00000001
+          || seedlistin.get(i).y < distowall -.00000001
+          || l - seedlistin.get(i).y < distowall -.00000001) {
+        return false;
+      }
+    }
+    for (int i = 0; i < trees.size(); i++) {
+      for (int j = 0; j < nseeds; j++) {
+        if (distance(seedlistin.get(j), trees.get(i)) < distotree - .00000001) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 
   boolean validateseed(seed mySeed, Hashtable<Point, ArrayList<seed>> grid) {
     
-    // for (int i = 0; i < 360; i++) {
-    //   Point circumPoint = new Point(Math.cos(Math.toRadians(i)), Math.sin(Math.toRadians(i)));
-    //   Point containingCell = new Point((int)(circumPoint.x - (circumPoint.x % GRID_WIDTH)), (int) (circumPoint.y  - (circumPoint.y % GRID_WIDTH)));
-    //   ArrayList<seed> seedsInCell = grid.get(containingCell);
-
-    //   ArrayList<seed> mySeedAndCell = new ArrayList<seed>();
-    //   mySeedAndCell.addAll(seedsInCell);
-    //   mySeedAndCell.add(mySeed);
-
-    //   if (!validateseed(mySeedAndCell)) return false;
-    // }
-
-    // return true;
 
     // Alternative method
     ArrayList<Point> cellPoints = new ArrayList<Point>();
@@ -741,7 +716,9 @@ public class Player extends watermelon.sim.Player {
 
     for (Point cellPoint : cellPoints) {
       if (isInBounds(cellPoint)) {
-        nearbySeeds.addAll(grid.get(cellPoint));
+        for (seed s : grid.get(cellPoint))
+          if (!nearbySeeds.contains(s))
+              nearbySeeds.add(s);
       }
     }
 
