@@ -724,7 +724,7 @@ public class Player extends watermelon.sim.Player {
     // return true;
 
     // Alternative method
-    ArrayList<Point> cellPoints = new ArrayList<Points>();
+    ArrayList<Point> cellPoints = new ArrayList<Point>();
     ArrayList<seed> nearbySeeds = new ArrayList<seed>();
     nearbySeeds.add(mySeed);
     
