@@ -788,7 +788,7 @@ public class Player extends watermelon.sim.Player {
       double rawScore = calculatescore(solution.seedlist);
       System.out.println("rawScore for board " + count + ": " + rawScore);
 
-      if (count > first_n && highScore > rawScore + avgMargin * 1.3) {
+      if ((count > first_n && highScore > rawScore + avgMargin * 1.3) || Double.isNaN(rawScore)) {
         continue; // this board has no chance of beating the high score
       }
 
