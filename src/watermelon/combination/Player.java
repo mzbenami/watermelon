@@ -709,6 +709,12 @@ public class Player extends watermelon.sim.Player {
     if (makespace) {
       tmp.x = moved_x;
       tmp.y = moved_y;
+      for (int f = 0; f < trees.size(); f++){
+        if (distance(tmp,trees.get(f)) < distotree){
+          tmp.x = x;
+          tmp.y = y;
+        }
+      }
     }
     if (add) 
       slist.add(tmp);
