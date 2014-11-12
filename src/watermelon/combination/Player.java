@@ -157,7 +157,7 @@ public class Player extends watermelon.sim.Player {
       refSeed = lineSeedList.get(0);
       boardSeedList.addAll(lineSeedList);
     } else {
-      return new Board(boardSeedList, boardGhostList);
+      return new Board(boardSeedList, boardGhostList, x_unit, y_unit);
     }
 
     while (lineSeedList.size() >= 1) {
@@ -171,7 +171,7 @@ public class Player extends watermelon.sim.Player {
       lineSeedList = addLineToBoard(lineSeedList,boardSeedList,boardGhostList,(-1) * x_unit, (-1) * y_unit);
     }
 
-    return new Board(boardSeedList, boardGhostList);
+    return new Board(boardSeedList, boardGhostList,x_unit,y_unit);
   }
 
   private ArrayList<seed> addLineToBoard(ArrayList<seed> line,
@@ -261,7 +261,11 @@ public class Player extends watermelon.sim.Player {
 
 
   //Recolor seeds neighboring trees if it will increase our score
-  public void recolorTreeNeighbors(ArrayList<seed> seeds, ArrayList<seed> ghosts, Hashtable<Point, ArrayList<seed>> grid){
+  public void recolorTreeNeighbors(Board solution, Hashtable<Point, ArrayList<seed>> grid){
+    ArrayList<seed> seeds = solution.seedlist;
+    ArrayList<seed> ghosts = solution.ghostlist;
+    double row_space = solution.row_space;
+    double col_space = solution.column_space;
     Hashtable<seed,ArrayList<seed>> graph = useGrid(seeds, "get_neighbors", grid);
     LinkedList<seed> flippable = new LinkedList<seed>(); //seeds that we will consider flipping
     seed tmp;
@@ -280,6 +284,11 @@ public class Player extends watermelon.sim.Player {
           }
           else if (s.y == g.y){
             if (s.x - distoseed == g.x || s.x + distoseed == g.x){ 
+              flippable.add(s);
+            }
+          }
+          else if (s.y - row_space == g.y || s.y + row_space == g.y){
+            if (s.x - col_space == g.x || s.x + col_space == g.x){
               flippable.add(s);
             }
           }
@@ -593,7 +602,7 @@ public class Player extends watermelon.sim.Player {
       double addSeedsScore = calculatescore(solution.seedlist);
       System.out.println("addSeedsScore: " + addSeedsScore);
 
-      recolorTreeNeighbors(solution.seedlist, solution.ghostlist, grid);
+      recolorTreeNeighbors(solution, grid);
       double firstColoringScore = calculatescore(solution.seedlist);
       System.out.println("firstColoringScore: " + firstColoringScore);
 

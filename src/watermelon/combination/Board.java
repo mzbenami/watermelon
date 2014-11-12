@@ -29,4 +29,10 @@ public class Board {
 		this.seedlist = seedlist;
 		this.ghostlist = ghostlist;
 	}
+	public Board(ArrayList<seed> seedlist, ArrayList<seed> ghostlist,double col_s, double row_s) {
+		this.seedlist = seedlist;
+		this.ghostlist = ghostlist;
+                this.column_space = col_s;
+                this.row_space = row_s;
+	}
 }
