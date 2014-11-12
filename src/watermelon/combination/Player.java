@@ -39,8 +39,8 @@ public class Player extends watermelon.sim.Player {
     }
 
     ArrayList<Board> solutionList = new ArrayList<Board>();
-    solutionList.add(altGridMove());
-    solutionList.add(staggeredMove());
+    solutionList.addAll(altGridMove());
+    solutionList.addAll(staggeredMove());
     solutionList.addAll(treeLayouts());
     System.out.println("Done packing");
     return chooseAltGrid(solutionList);
@@ -48,29 +48,30 @@ public class Player extends watermelon.sim.Player {
   }
 
   //Rectilinear packing
-  public Board altGridMove() {
+  public ArrayList<Board> altGridMove() {
     return tightPacking(false,distoseed);
   }
 
   //Hexagonal Packing
-  public Board staggeredMove() {
+  public ArrayList<Board> staggeredMove() {
 
     return tightPacking(true,stag_distoseed);
   }
 
   //Generic Packing
-  public Board tightPacking(boolean isStaggered, double lengthIterator) {
+  public ArrayList<Board> tightPacking(boolean isStaggered, double lengthIterator) {
     boolean lastime = false;
     double x=0.0;
     int rowCounter = 0;
     ArrayList<seed> seedlist = new ArrayList<seed>();
     ArrayList<seed> ghostseeds = new ArrayList<seed>();//Keep track of seeds we can't plant because of trees
+    ArrayList<Board> boards = new ArrayList<Board>();
 
     double j;
     for (j = distowall; j <= l - distowall; j = j + lengthIterator) {
       for (double i = distowall; i <= w - distowall; i = i + distoseed) {
         boolean makespace = false;
-        if (j + Math.tan(Math.toRadians(60.00)) >= l - distowall) {
+        if (j + lengthIterator >= l - distowall) {
           makespace = true;
         }
 
@@ -83,7 +84,7 @@ public class Player extends watermelon.sim.Player {
           }
         }
 
-        lastime = addSeed(seedlist,ghostseeds,x,j,lastime,makespace);
+        lastime = addSeed(seedlist,ghostseeds,x,j,lastime,makespace,x,l - distowall);
       }
       rowCounter ++;
       if (rowCounter % 2 == 0) {
@@ -91,7 +92,192 @@ public class Player extends watermelon.sim.Player {
       }
     }
 
-    return new Board(seedlist, ghostseeds);
+    boards.add(new Board(seedlist, ghostseeds));
+    seedlist = new ArrayList<seed>();
+    ghostseeds = new ArrayList<seed>();
+    for (j = distowall; j <= w - distowall; j = j + lengthIterator) {
+      for (double i = distowall; i <= l - distowall; i = i + distoseed) {
+        boolean makespace = false;
+        if (j + lengthIterator >= w - distowall) {
+          makespace = true;
+        }
+
+        x = i;
+        if (isStaggered && rowCounter % 2 == 1){
+          if (i + 1 < l - distowall) {
+            x = i + 1;
+          } else {
+            continue;
+          }
+        }
+
+        lastime = addSeed(seedlist,ghostseeds,j,x,lastime,makespace,w - distowall,x);
+      }
+      rowCounter ++;
+      if (rowCounter % 2 == 0) {
+        lastime = !lastime;
+      }
+    }
+    boards.add(new Board(seedlist, ghostseeds));
+
+    seedlist = new ArrayList<seed>();
+    ghostseeds = new ArrayList<seed>();
+    for (j = l - distowall; j >= distowall; j = j - lengthIterator) {
+      for (double i = distowall; i <= w - distowall; i = i + distoseed) {
+        boolean makespace = false;
+        if (j - lengthIterator <= distowall) {
+          makespace = true;
+        }
+
+        x = i;
+        if (isStaggered && rowCounter % 2 == 1){
+          if (i + 1 < l - distowall) {
+            x = i + 1;
+          } else {
+            continue;
+          }
+        }
+
+        lastime = addSeed(seedlist,ghostseeds,x,j,lastime,makespace,x,distowall);
+      }
+      rowCounter ++;
+      if (rowCounter % 2 == 0) {
+        lastime = !lastime;
+      }
+    }
+    boards.add(new Board(seedlist, ghostseeds));
+    seedlist = new ArrayList<seed>();
+    ghostseeds = new ArrayList<seed>();
+    for (j = distowall; j <= w-distowall; j = j + lengthIterator) {
+      for (double i = l - distowall; i >= distowall; i = i - distoseed) {
+        boolean makespace = false;
+        if (j + lengthIterator >= w - distowall) {
+          makespace = true;
+        }
+
+        x = i;
+        if (isStaggered && rowCounter % 2 == 1){
+          if (i + 1 < l - distowall) {
+            x = i + 1;
+          } else {
+            continue;
+          }
+        }
+
+        lastime = addSeed(seedlist,ghostseeds,j,x,lastime,makespace,w - distowall,x);
+      }
+      rowCounter ++;
+      if (rowCounter % 2 == 0) {
+        lastime = !lastime;
+      }
+    }
+    boards.add(new Board(seedlist, ghostseeds));
+    seedlist = new ArrayList<seed>();
+    ghostseeds = new ArrayList<seed>();
+    for (j = l - distowall ; j >= distowall; j = j - lengthIterator) {
+      for (double i = w - distowall; i >= distowall; i = i - distoseed) {
+        boolean makespace = false;
+        if (j - lengthIterator <= distowall) {
+          makespace = true;
+        }
+
+        x = i;
+        if (isStaggered && rowCounter % 2 == 1){
+          if (i + 1 < l - distowall) {
+            x = i + 1;
+          } else {
+            continue;
+          }
+        }
+
+        lastime = addSeed(seedlist,ghostseeds,x,j,lastime,makespace,x,distowall);
+      }
+      rowCounter ++;
+      if (rowCounter % 2 == 0) {
+        lastime = !lastime;
+      }
+    }
+    boards.add(new Board(seedlist, ghostseeds));
+    seedlist = new ArrayList<seed>();
+    ghostseeds = new ArrayList<seed>();
+    for (j = w - distowall ; j >= distowall; j = j - lengthIterator) {
+      for (double i = l - distowall; i >= distowall; i = i - distoseed) {
+        boolean makespace = false;
+        if (j - lengthIterator <= distowall) {
+          makespace = true;
+        }
+
+        x = i;
+        if (isStaggered && rowCounter % 2 == 1){
+          if (i + 1 < l - distowall) {
+            x = i + 1;
+          } else {
+            continue;
+          }
+        }
+
+        lastime = addSeed(seedlist,ghostseeds,j,x,lastime,makespace,distowall,x);
+      }
+      rowCounter ++;
+      if (rowCounter % 2 == 0) {
+        lastime = !lastime;
+      }
+    }
+    boards.add(new Board(seedlist, ghostseeds));
+    seedlist = new ArrayList<seed>();
+    ghostseeds = new ArrayList<seed>();
+    for (j = w - distowall ; j >= distowall; j = j - lengthIterator) {
+      for (double i = distowall; i <= l - distowall; i = i + distoseed) {
+        boolean makespace = false;
+        if (j - lengthIterator <= distowall) {
+          makespace = true;
+        }
+
+        x = i;
+        if (isStaggered && rowCounter % 2 == 1){
+          if (i + 1 < l - distowall) {
+            x = i + 1;
+          } else {
+            continue;
+          }
+        }
+
+        lastime = addSeed(seedlist,ghostseeds,j,x,lastime,makespace,distowall, x);
+      }
+      rowCounter ++;
+      if (rowCounter % 2 == 0) {
+        lastime = !lastime;
+      }
+    }
+    boards.add(new Board(seedlist, ghostseeds));
+    seedlist = new ArrayList<seed>();
+    ghostseeds = new ArrayList<seed>();
+    for (j = distowall ; j <= l - distowall; j = j + lengthIterator) {
+      for (double i = w - distowall; i >= distowall; i = i - distoseed) {
+        boolean makespace = false;
+        if (j + lengthIterator >= l - distowall) {
+          makespace = true;
+        }
+
+        x = i;
+        if (isStaggered && rowCounter % 2 == 1){
+          if (i + 1 < l - distowall) {
+            x = i + 1;
+          } else {
+            continue;
+          }
+        }
+
+        lastime = addSeed(seedlist,ghostseeds,x,j,lastime,makespace,x,l - distowall);
+      }
+      rowCounter ++;
+      if (rowCounter % 2 == 0) {
+        lastime = !lastime;
+      }
+    }
+    boards.add(new Board(seedlist, ghostseeds));
+    return boards;
+
   }
 
   //Tree packing
@@ -215,7 +401,7 @@ public class Player extends watermelon.sim.Player {
     double j = startPoint.y;
 
     while (i + distowall <= w && j + distowall <= l && i - distowall >= 0.0 && j - distowall >= 0.0) {
-      lastime = addSeed(seedlist, ghostseeds,i,j,lastime,false);
+      lastime = addSeed(seedlist, ghostseeds,i,j,lastime,false,0.0,0.0);
       i += x_inc;
       j += y_inc;
 
@@ -509,7 +695,8 @@ public class Player extends watermelon.sim.Player {
   }
 
   //Add a seed unless a tree is blocking it
-  public boolean addSeed(ArrayList<seed> slist, ArrayList<seed> ghosts, double x, double y, boolean ploidy, boolean makespace){
+  public boolean addSeed(ArrayList<seed> slist, ArrayList<seed> ghosts, double x, double y, boolean ploidy
+                        , boolean makespace, double moved_x, double moved_y){
     seed tmp;
     boolean add = true;
     tmp = new seed(x,y,ploidy);
@@ -520,7 +707,8 @@ public class Player extends watermelon.sim.Player {
       }
     }
     if (makespace) {
-      tmp.y = l - distowall;
+      tmp.x = moved_x;
+      tmp.y = moved_y;
     }
     if (add) 
       slist.add(tmp);
@@ -598,7 +786,7 @@ public class Player extends watermelon.sim.Player {
       count++;
       
       double rawScore = calculatescore(solution.seedlist);
-      System.out.println("rawScore: " + rawScore);
+      System.out.println("rawScore for board " + count + ": " + rawScore);
 
       if (count > first_n && highScore > rawScore + avgMargin * 1.3) {
         continue; // this board has no chance of beating the high score
