@@ -38,7 +38,7 @@ public class Player extends watermelon.sim.Player {
       hasInitialized = true;
     }
 
-    ArrayList<ArrayList<seed>> solutionList = new ArrayList<ArrayList<seed>>();
+    ArrayList<Board> solutionList = new ArrayList<Board>();
     solutionList.add(altGridMove());
     solutionList.add(staggeredMove());
     solutionList.addAll(treeLayouts());
@@ -48,18 +48,18 @@ public class Player extends watermelon.sim.Player {
   }
 
   //Rectilinear packing
-  public ArrayList<seed> altGridMove() {
+  public Board altGridMove() {
     return tightPacking(false,distoseed);
   }
 
   //Hexagonal Packing
-  public ArrayList<seed> staggeredMove() {
+  public Board staggeredMove() {
 
     return tightPacking(true,stag_distoseed);
   }
 
   //Generic Packing
-  public ArrayList<seed> tightPacking(boolean isStaggered, double lengthIterator) {
+  public Board tightPacking(boolean isStaggered, double lengthIterator) {
     boolean lastime = false;
     double x=0.0;
     int rowCounter = 0;
@@ -91,14 +91,13 @@ public class Player extends watermelon.sim.Player {
       }
     }
 
-    recolorTreeNeighbors(seedlist,ghostseeds);
-    return seedlist;
+    return new Board(seedlist, ghostseeds);
   }
 
   //Tree packing
-  private ArrayList<ArrayList<seed>> treeLayouts() {
+  private ArrayList<Board> treeLayouts() {
 
-    ArrayList<ArrayList<seed>> treeLayouts = new ArrayList<ArrayList<seed>>();
+    ArrayList<Board> treeLayouts = new ArrayList<Board>();
     Pair tree1,tree2;
     double search_angle;
 
@@ -141,7 +140,7 @@ public class Player extends watermelon.sim.Player {
 
   }
 
-  private ArrayList<seed> boardFromPointAndAngle(Pair point) {
+  private Board boardFromPointAndAngle(Pair point) {
 
     ArrayList<seed> boardSeedList = new ArrayList<seed>();
     ArrayList<seed> boardGhostList = new ArrayList<seed>();
@@ -158,7 +157,7 @@ public class Player extends watermelon.sim.Player {
       refSeed = lineSeedList.get(0);
       boardSeedList.addAll(lineSeedList);
     } else {
-      return boardSeedList;
+      return new Board(boardSeedList, boardGhostList);
     }
 
     while (lineSeedList.size() >= 1) {
@@ -172,11 +171,7 @@ public class Player extends watermelon.sim.Player {
       lineSeedList = addLineToBoard(lineSeedList,boardSeedList,boardGhostList,(-1) * x_unit, (-1) * y_unit);
     }
 
-    //Add seeds and do ghostseed recoloring 
-    recolorTreeNeighbors(boardSeedList,boardGhostList);
-
-
-    return boardSeedList;
+    return new Board(boardSeedList, boardGhostList);
   }
 
   private ArrayList<seed> addLineToBoard(ArrayList<seed> line,
@@ -266,8 +261,8 @@ public class Player extends watermelon.sim.Player {
 
 
   //Recolor seeds neighboring trees if it will increase our score
-  public void recolorTreeNeighbors(ArrayList<seed> seeds, ArrayList<seed> ghosts){
-    Hashtable<seed,ArrayList<seed>> graph = generateGraph(seeds);
+  public void recolorTreeNeighbors(ArrayList<seed> seeds, ArrayList<seed> ghosts, Hashtable<Point, ArrayList<seed>> grid){
+    Hashtable<seed,ArrayList<seed>> graph = useGrid(seeds, "get_neighbors", grid);
     LinkedList<seed> flippable = new LinkedList<seed>(); //seeds that we will consider flipping
     seed tmp;
     double highScore = 0.0;
@@ -319,7 +314,7 @@ public class Player extends watermelon.sim.Player {
 
 
   //Generate a seed graph using the radar technique
-  public Hashtable<seed,ArrayList<seed>> generateGraph(ArrayList<seed> seedlist){
+  public Hashtable<Point,ArrayList<seed>> generateGrid(ArrayList<seed> seedlist){
     Hashtable<Point,ArrayList<seed>> grid = new Hashtable<Point,ArrayList<seed>>();
     
     //Start of grid creation and population
@@ -363,9 +358,7 @@ public class Player extends watermelon.sim.Player {
     //End of grid creation and population
     //Populate grid
 
-    useGrid(seedlist, "add_seeds",grid);
-    return useGrid(seedlist, "get_neighbors",grid);
-
+    return grid;
   }
 
   public Hashtable<seed,ArrayList<seed>> useGrid(ArrayList<seed> seedlist, String str, Hashtable<Point,ArrayList<seed>> grid){
@@ -529,8 +522,6 @@ public class Player extends watermelon.sim.Player {
 
   private ArrayList<seed> iterativeColoring(ArrayList<seed> originalBoard) {
 
-    System.out.println("Score before coloring: " + calculatescore(originalBoard));
-
     int iterations = 200;
     for (int i = 0; i < iterations; i++) {
       Collections.shuffle(originalBoard);
@@ -584,44 +575,47 @@ public class Player extends watermelon.sim.Player {
 
   //Given a rectilinear packing and a hexagonal packing, pick the one yielding
   //a higher score.
-  public ArrayList<seed> chooseAltGrid(ArrayList<ArrayList<seed>> solutionList) {
+  public ArrayList<seed> chooseAltGrid(ArrayList<Board> solutionList) {
     double highScore = 0.0;
-    double temp = 0.0;
     ArrayList<seed> finalList = null;
     int count = 0;
     int highCount = 0;
     int thresholdCount = 0;
     double threshold = 0.0;
     double maxMargin = 0.0;
-    for (ArrayList<seed> solution : solutionList){
-      temp = calculatescore(solution);
-      if (thresholdCount < 10) {
-        threshold = temp;
-      } else {
-        threshold = maxMargin + 2;
-      }
+    int zeroCount = 0;
+    for (Board solution : solutionList){
+      System.out.println("Solutions: " + solutionList.size());
 
-      if (temp < highScore - threshold) {
-        System.out.println("Not looking at: " + temp);
-        continue;
-      }
+      double rawScore = calculatescore(solution.seedlist);
+      System.out.println("rawScore: " + rawScore);
 
-      solution = iterativeColoring(solution);
-      double margin = calculatescore(solution) - temp;
-      temp += margin;
-      if (margin > maxMargin) {
-        maxMargin = margin;
+      if (rawScore == 0.0) {
+        zeroCount++;
       }
+      System.out.println("zeroCount: " + zeroCount);
 
-      System.out.println("Score for board: " + temp);
-      if (temp >= highScore){
-        highScore = temp;
-        finalList = solution;
+      Hashtable<Point, ArrayList<seed>> grid = generateGrid(solution.seedlist);
+      useGrid(solution.seedlist, "add_seeds", grid);
+      double addSeedsScore = calculatescore(solution.seedlist);
+      System.out.println("addSeedsScore: " + addSeedsScore);
+
+      recolorTreeNeighbors(solution.seedlist, solution.ghostlist, grid);
+      double firstColoringScore = calculatescore(solution.seedlist);
+      System.out.println("firstColoringScore: " + firstColoringScore);
+
+      iterativeColoring(solution.seedlist);
+      double secondColoringScore = calculatescore(solution.seedlist);
+      System.out.println("secondColoringScore: " + secondColoringScore);
+
+      if (secondColoringScore >= highScore){
+        highScore = secondColoringScore;
+        finalList = solution.seedlist;
         highCount = count;
       }
+
       System.out.println("High score: " + highScore);
       count++;
-      thresholdCount++;
     }
     System.out.println("Highest scoring board: " + highCount);
 
@@ -697,7 +691,6 @@ public class Player extends watermelon.sim.Player {
 
   boolean validateseed(seed mySeed, Hashtable<Point, ArrayList<seed>> grid) {
     
-
     // Alternative method
     ArrayList<Point> cellPoints = new ArrayList<Point>();
     ArrayList<seed> nearbySeeds = new ArrayList<seed>();

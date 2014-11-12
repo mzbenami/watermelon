@@ -58,8 +58,8 @@ public class Player extends watermelon.sim.Player {
 
 		ArrayList<ArrayList<seed>> solutionList = new ArrayList<ArrayList<seed>>();
 
-		// solutionList.add(altGridMove(treelist, width, length, s));
-		// solutionList.add(staggeredMove(treelist, width, length, s));
+		solutionList.add(altGridMove(treelist, width, length, s));
+		solutionList.add(staggeredMove(treelist, width, length, s));
 		solutionList.addAll(treeLayouts());
 		ArrayList<seed> bestSolution = chooseAltGrid(solutionList);
 		clustersFromBoard(bestSolution);
@@ -507,8 +507,15 @@ public class Player extends watermelon.sim.Player {
 		double highScore = 0.0;
 		double temp = 0.0;
 		ArrayList<seed> finalList = null;
+		int zeroCount = 0;
 		for (ArrayList<seed> solution : solutionList){
+			System.out.println("Solutions: " + solutionList.size());
 			temp = calculatescore(solution);
+			if (temp == 0.0) {
+				zeroCount++;
+				System.out.println("zeroCount: " + zeroCount);
+			}
+
 			if (temp < highScore - 6) {
 				System.out.println("Not lookng at: " + temp);
 				continue;

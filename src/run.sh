@@ -11,4 +11,4 @@ S=${6:-.01}
 javac watermelon/sim/watermelon.java
 javac watermelon/$GROUP/Player.java
 
-java watermelon.sim.watermelon $MAP $LENGTH $WIDTH $GUI $GROUP $S
+java -Xmx1g watermelon.sim.watermelon $MAP $LENGTH $WIDTH $GUI $GROUP $S
