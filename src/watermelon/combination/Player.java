@@ -589,13 +589,20 @@ public class Player extends watermelon.sim.Player {
     ArrayList<seed> finalList = null;
     int count = 0;
     int highCount = 0;
-    int thresholdCount = 0;
+    int first_n = 10;
     double threshold = 0.0;
-    double maxMargin = 0.0;
+    double avgMargin = 0.0;
     int zeroCount = 0;
+
     for (Board solution : solutionList){
+      count++;
+      
       double rawScore = calculatescore(solution.seedlist);
       System.out.println("rawScore: " + rawScore);
+
+      if (count > first_n && highScore > rawScore + avgMargin * 1.3) {
+        continue; // this board has no chance of beating the high score
+      }
 
       Hashtable<Point, ArrayList<seed>> grid = generateGrid(solution.seedlist);
       useGrid(solution.seedlist, "add_seeds", grid);
@@ -610,6 +617,9 @@ public class Player extends watermelon.sim.Player {
       double secondColoringScore = calculatescore(solution.seedlist);
       System.out.println("secondColoringScore: " + secondColoringScore);
 
+      double margin = secondColoringScore - rawScore;
+      avgMargin = (avgMargin * (count - 1) + margin) / count;
+
       if (secondColoringScore >= highScore){
         highScore = secondColoringScore;
         finalList = solution.seedlist;
@@ -617,7 +627,7 @@ public class Player extends watermelon.sim.Player {
       }
 
       System.out.println("High score: " + highScore);
-      count++;
+
     }
     System.out.println("Highest scoring board: " + highCount);
 
