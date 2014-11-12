@@ -104,7 +104,7 @@ public class Player extends watermelon.sim.Player {
     //trees that are fully inbounds
     ArrayList<Pair> treelist = new ArrayList<Pair>();
     for (Pair tree : trees) {
-      if (isInBounds(tree)) {
+      if (isStrictlyInBounds(tree)) {
         treelist.add(new Pair(tree.x,tree.y));
       }
     }
@@ -224,7 +224,7 @@ public class Player extends watermelon.sim.Player {
 
   private Pair cornersCloserTo(Pair a, boolean positive) {
 
-    if (isInBounds(a)) {
+    if (isStrictlyInBounds(a)) {
       return a;
     }
 
@@ -248,7 +248,7 @@ public class Player extends watermelon.sim.Player {
     double bToSw = distance(b, new Pair(0, l));
     double bToSe = distance(b, new Pair(w, l));
 
-    if (isInBounds(b)) {
+    if (isStrictlyInBounds(b)) {
       return b;
     }
 
@@ -585,15 +585,8 @@ public class Player extends watermelon.sim.Player {
     double maxMargin = 0.0;
     int zeroCount = 0;
     for (Board solution : solutionList){
-      System.out.println("Solutions: " + solutionList.size());
-
       double rawScore = calculatescore(solution.seedlist);
       System.out.println("rawScore: " + rawScore);
-
-      if (rawScore == 0.0) {
-        zeroCount++;
-      }
-      System.out.println("zeroCount: " + zeroCount);
 
       Hashtable<Point, ArrayList<seed>> grid = generateGrid(solution.seedlist);
       useGrid(solution.seedlist, "add_seeds", grid);
@@ -736,6 +729,10 @@ public class Player extends watermelon.sim.Player {
 
   public boolean isInBounds (Pair p){
     return p.x >= 0.0 && p.y >= 0.0 && p.x <= w && p.y <= l;
+  }
+
+  private boolean isStrictlyInBounds(Pair p) {
+    return p.x + distowall <= w && p.y + distowall <= l && p.x - distowall >= 0.0 && p.y - distowall >= 0.0;
   }
   public boolean isInBounds (Point p){
     return p.x >= 0.0 && p.y >= 0.0 && p.x <= w && p.y <= l;
